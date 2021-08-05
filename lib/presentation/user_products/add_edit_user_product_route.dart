@@ -19,6 +19,8 @@ class _AddEditUserProductRouteState extends State<AddEditUserProductRoute> {
 
   String? _updateProductId;
 
+  bool _loading = false;
+
   @override
   void dispose() {
     _imageUrlController.dispose();
@@ -47,15 +49,43 @@ class _AddEditUserProductRouteState extends State<AddEditUserProductRoute> {
 
     formState?.save();
 
-    context.read<ProductsProvider>().addProduct(
-          _updateProductId,
-          _title!,
-          _description!,
-          _imageUrl!,
-          double.parse(_price!),
-        );
+    final productsProvider = context.read<ProductsProvider>();
 
-    Navigator.of(context).pop();
+    setState(() => _loading = true);
+
+    (_updateProductId == null
+            ? productsProvider.addProduct(
+                _title!,
+                _description!,
+                _imageUrl!,
+                double.parse(_price!),
+              )
+            : productsProvider.updateProduct(
+                _updateProductId!,
+                _title!,
+                _description!,
+                _imageUrl!,
+                double.parse(_price!),
+              ))
+        .catchError((error) {
+      setState(() => _loading = false);
+      return showDialog<Null>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: Text('Add product issue'),
+          content: Text(error.toString()),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Close'),
+            ),
+          ],
+        ),
+      );
+    }).then((_) {
+      setState(() => _loading = false);
+      Navigator.of(context).pop();
+    });
   }
 
   @override
@@ -87,79 +117,83 @@ class _AddEditUserProductRouteState extends State<AddEditUserProductRoute> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                TextFormField(
-                  initialValue: _title,
-                  decoration: InputDecoration(labelText: 'Title'),
-                  textInputAction: TextInputAction.next,
-                  validator: _blankValidator,
-                  onSaved: (value) => _title = value,
-                ),
-                TextFormField(
-                  initialValue: _price,
-                  decoration: InputDecoration(labelText: 'Price'),
-                  textInputAction: TextInputAction.next,
-                  keyboardType: TextInputType.number,
-                  onSaved: (value) => _price = value,
-                  validator: _priceValidator,
-                ),
-                TextFormField(
-                  initialValue: _description,
-                  decoration: InputDecoration(labelText: 'Description'),
-                  keyboardType: TextInputType.multiline,
-                  maxLines: 3,
-                  validator: _blankValidator,
-                  onSaved: (value) => _description = value,
-                ),
-                Row(
-                  children: [
-                    Container(
-                      margin: const EdgeInsets.only(right: 16, top: 16),
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.black54,
-                          width: 2,
-                        ),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: FittedBox(
-                          child: Image.network(
-                            _imageUrlController.text,
-                            errorBuilder: (builderContext, object, trace) =>
-                                Icon(Icons.image),
-                          ),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                    ),
-                    Flexible(
-                      fit: FlexFit.tight,
-                      child: TextFormField(
-                        controller: _imageUrlController,
-                        decoration: InputDecoration(labelText: 'Image url'),
-                        textInputAction: TextInputAction.done,
-                        keyboardType: TextInputType.url,
-                        onChanged: (_) => setState(() {}),
-                        onEditingComplete: () => setState(() {}),
-                        onFieldSubmitted: (_) => _submitForm(),
-                        onSaved: (value) => _imageUrl = value,
+        child: _loading
+            ? Center(child: CircularProgressIndicator())
+            : Form(
+                key: _formKey,
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      TextFormField(
+                        initialValue: _title,
+                        decoration: InputDecoration(labelText: 'Title'),
+                        textInputAction: TextInputAction.next,
                         validator: _blankValidator,
+                        onSaved: (value) => _title = value,
                       ),
-                    ),
-                  ],
+                      TextFormField(
+                        initialValue: _price,
+                        decoration: InputDecoration(labelText: 'Price'),
+                        textInputAction: TextInputAction.next,
+                        keyboardType: TextInputType.number,
+                        onSaved: (value) => _price = value,
+                        validator: _priceValidator,
+                      ),
+                      TextFormField(
+                        initialValue: _description,
+                        decoration: InputDecoration(labelText: 'Description'),
+                        keyboardType: TextInputType.multiline,
+                        maxLines: 3,
+                        validator: _blankValidator,
+                        onSaved: (value) => _description = value,
+                      ),
+                      Row(
+                        children: [
+                          Container(
+                            margin: const EdgeInsets.only(right: 16, top: 16),
+                            width: 50,
+                            height: 50,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.black54,
+                                width: 2,
+                              ),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: FittedBox(
+                                child: Image.network(
+                                  _imageUrlController.text,
+                                  errorBuilder:
+                                      (builderContext, object, trace) =>
+                                          Icon(Icons.image),
+                                ),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                          Flexible(
+                            fit: FlexFit.tight,
+                            child: TextFormField(
+                              controller: _imageUrlController,
+                              decoration:
+                                  InputDecoration(labelText: 'Image url'),
+                              textInputAction: TextInputAction.done,
+                              keyboardType: TextInputType.url,
+                              onChanged: (_) => setState(() {}),
+                              onEditingComplete: () => setState(() {}),
+                              onFieldSubmitted: (_) => _submitForm(),
+                              onSaved: (value) => _imageUrl = value,
+                              validator: _blankValidator,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
-          ),
-        ),
+              ),
       ),
     );
   }
