@@ -10,6 +10,10 @@ class UserProductsRoute extends StatelessWidget {
     Navigator.of(context).pushNamed(AppRoute.ADD_EDIT_USER_PRODUCT);
   }
 
+  Future<void> _refreshProducts(BuildContext context) async {
+    await context.read<ProductsProvider>().fetchProducts(refresh: true);
+  }
+
   @override
   Widget build(BuildContext context) {
     final productsProvider = context.watch<ProductsProvider>();
@@ -20,15 +24,18 @@ class UserProductsRoute extends StatelessWidget {
         actions: [
           products.isNotEmpty
               ? IconButton(
-                  onPressed: () => _navigateToProductEditing(context),
-                  icon: Icon(Icons.add_rounded),
-                )
+            onPressed: () => _navigateToProductEditing(context),
+            icon: Icon(Icons.add_rounded),
+          )
               : Container(),
         ],
       ),
-      body: products.isEmpty
-          ? _buildEmptyListWidget(context)
-          : _buildProductListWidget(context, products),
+      body: RefreshIndicator(
+        onRefresh: () => _refreshProducts(context),
+        child: products.isEmpty
+            ? _buildEmptyListWidget(context)
+            : _buildProductListWidget(context, products),
+      ),
     );
   }
 

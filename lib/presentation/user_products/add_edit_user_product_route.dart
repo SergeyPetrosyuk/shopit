@@ -84,9 +84,9 @@ class _AddEditUserProductRouteState extends State<AddEditUserProductRoute> {
           ],
         ),
       );
-    } finally {
-      Navigator.of(context).pop();
     }
+
+    Navigator.of(context).pop();
   }
 
   @override

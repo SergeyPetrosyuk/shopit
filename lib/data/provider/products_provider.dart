@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shopit/data/network/endpoint.dart';
+import 'package:shopit/model/http_exception.dart';
 import 'package:shopit/model/product.dart';
 
 class ProductsProvider with ChangeNotifier {
@@ -38,8 +39,8 @@ class ProductsProvider with ChangeNotifier {
     responseBodyAction(jsonDecode(response.body));
   }
 
-  Future<void> fetchProducts() async {
-    if (_products.isNotEmpty) return;
+  Future<void> fetchProducts({bool refresh = false}) async {
+    if (_products.isNotEmpty && !refresh) return;
 
     print('fetchProducts()');
     final uri = Uri.https(BASE_URL, '${Endpoint.Products}.json');
@@ -159,9 +160,30 @@ class ProductsProvider with ChangeNotifier {
     }
   }
 
-  void delete(String productId) {
-    _products.removeWhere((element) => element.id == productId);
+  Future<void> delete(String productId) async {
+    final productIndex =
+        _products.indexWhere((element) => element.id == productId);
+
+    if (productIndex == -1) return;
+
+    Product? product = _products[productIndex];
+
+    _products.removeAt(productIndex);
     notifyListeners();
+
+    final url = _buildUri(productId: productId);
+
+    Function fallbackAction = (){
+      _products.insert(productIndex, product!);
+      notifyListeners();
+    };
+
+    final response = await http.delete(url);
+    if(response.statusCode >= 400) {
+      fallbackAction();
+      throw HttpExceptions(response);
+    }
+    product = null;
   }
 
   bool _isResponseSuccess(http.Response response) =>

@@ -18,34 +18,43 @@ class UserProductItemWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final productsProvider = context.watch<ProductsProvider>();
+    final ScaffoldMessengerState messengerState = ScaffoldMessenger.of(context);
 
     return Row(
-        children: [
-          CircleAvatar(backgroundImage: NetworkImage(imageUrl)),
-          Flexible(
-            fit: FlexFit.tight,
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                title,
-                style: Theme.of(context).textTheme.headline6,
-              ),
+      children: [
+        CircleAvatar(backgroundImage: NetworkImage(imageUrl)),
+        Flexible(
+          fit: FlexFit.tight,
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text(
+              title,
+              style: Theme.of(context).textTheme.headline6,
             ),
           ),
-          IconButton(
-            onPressed: () => Navigator.of(context).pushNamed(
-              AppRoute.ADD_EDIT_USER_PRODUCT,
-              arguments: id,
-            ),
-            color: Theme.of(context).primaryColor,
-            icon: Icon(Icons.edit_rounded),
+        ),
+        IconButton(
+          onPressed: () => Navigator.of(context).pushNamed(
+            AppRoute.ADD_EDIT_USER_PRODUCT,
+            arguments: id,
           ),
-          IconButton(
-            onPressed: () => productsProvider.delete(id),
-            color: Theme.of(context).errorColor,
-            icon: Icon(Icons.delete_forever_rounded),
-          )
-        ],
-      );
+          color: Theme.of(context).primaryColor,
+          icon: Icon(Icons.edit_rounded),
+        ),
+        IconButton(
+          onPressed: () async {
+            try {
+              await productsProvider.delete(id);
+            } catch (error) {
+              messengerState.showSnackBar(SnackBar(
+                content: Text(error.toString()),
+              ));
+            }
+          },
+          color: Theme.of(context).errorColor,
+          icon: Icon(Icons.delete_forever_rounded),
+        )
+      ],
+    );
   }
 }
