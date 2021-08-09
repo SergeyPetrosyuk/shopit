@@ -6,40 +6,7 @@ import 'package:shopit/data/network/endpoint.dart';
 import 'package:shopit/model/product.dart';
 
 class ProductsProvider with ChangeNotifier {
-  List<Product> _products = [
-    Product(
-      id: 'p1',
-      title: 'Red Shirt',
-      description: 'A red shirt - it is pretty red!',
-      price: 29.99,
-      imageUrl:
-          'https://cdn.pixabay.com/photo/2016/10/02/22/17/red-t-shirt-1710578_1280.jpg',
-    ),
-    Product(
-      id: 'p2',
-      title: 'Trousers',
-      description: 'A nice pair of trousers.',
-      price: 59.99,
-      imageUrl:
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Trousers%2C_dress_%28AM_1960.022-8%29.jpg/512px-Trousers%2C_dress_%28AM_1960.022-8%29.jpg',
-    ),
-    Product(
-      id: 'p3',
-      title: 'Yellow Scarf',
-      description: 'Warm and cozy - exactly what you need for the winter.',
-      price: 19.99,
-      imageUrl:
-      'https://live.staticflickr.com/4043/4438260868_cc79b3369d_z.jpg',
-    ),
-    Product(
-      id: 'p4',
-      title: 'A Pan',
-      description: 'Prepare any meal you want.',
-      price: 49.99,
-      imageUrl:
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Cast-Iron-Pan.jpg/1024px-Cast-Iron-Pan.jpg',
-    ),
-  ];
+  List<Product> _products = [];
 
   List<Product> get products => [..._products];
 
@@ -53,13 +20,66 @@ class ProductsProvider with ChangeNotifier {
     _products.firstWhere((product) => product.id == id).toggleFavorite();
   }
 
+  void _tryResponseBody({
+    required http.Response response,
+    required Function(Map<String, dynamic>) responseBodyAction,
+    Function(Exception exception)? failureAction,
+  }) {
+    if (!_isResponseSuccess(response)) {
+      failureAction?.call(Exception(response.body));
+      return;
+    }
+
+    if (response.body.toLowerCase() == 'null') {
+      responseBodyAction({});
+      return;
+    }
+
+    responseBodyAction(jsonDecode(response.body));
+  }
+
+  Future<void> fetchProducts() async {
+    if (_products.isNotEmpty) return;
+
+    print('fetchProducts()');
+    final uri = Uri.https(BASE_URL, '${Endpoint.Products}.json');
+
+    try {
+      final response = await http.get(uri);
+
+      _tryResponseBody(
+        response: response,
+        failureAction: (error) => throw error,
+        responseBodyAction: (data) {
+          final List<Product> products = [];
+          data.forEach((id, productData) {
+            products.add(Product(
+              id: id,
+              title: productData['title'],
+              description: productData['description'],
+              price: productData['price'],
+              imageUrl: productData['image_url'],
+              isFavorite: productData['favorite'],
+            ));
+          });
+
+          _products = products;
+          notifyListeners();
+        },
+      );
+    } catch (error) {
+      print('catch::$error');
+      // throw error;
+    }
+  }
+
   Future<void> updateProduct(
     String id,
     String title,
     String description,
     String imageUrl,
     double price,
-  ) {
+  ) async {
     final int index = _products.indexWhere((element) => element.id == id);
     final productJsonData = jsonEncode({
       'id': id,
@@ -70,9 +90,12 @@ class ProductsProvider with ChangeNotifier {
       'favorite': _products[index].isFavorite,
     });
 
-    return http
-        .patch(_buildUri(productId: id), body: productJsonData)
-        .then((response) {
+    try {
+      final response = await http.patch(
+        _buildUri(productId: id),
+        body: productJsonData,
+      );
+
       if (_isResponseSuccess(response)) {
         final product = Product(
           id: id,
@@ -88,7 +111,9 @@ class ProductsProvider with ChangeNotifier {
       } else {
         throw response.body;
       }
-    });
+    } catch (error) {
+      throw error;
+    }
   }
 
   Future<void> addProduct(
@@ -96,7 +121,7 @@ class ProductsProvider with ChangeNotifier {
     String description,
     String imageUrl,
     double price,
-  ) {
+  ) async {
     final productJsonData = jsonEncode({
       'title': title,
       'description': description,
@@ -105,7 +130,9 @@ class ProductsProvider with ChangeNotifier {
       'favorite': false,
     });
 
-    return http.post(_buildUri(), body: productJsonData).then((response) {
+    try {
+      final response = await http.post(_buildUri(), body: productJsonData);
+
       if (_isResponseSuccess(response)) {
         if (response.body.isNotEmpty) {
           final Map<String, dynamic> responseData = jsonDecode(response.body);
@@ -120,14 +147,16 @@ class ProductsProvider with ChangeNotifier {
               isFavorite: false,
             );
 
-            _products.insert(0, product);
+            _products.add(product);
             notifyListeners();
           }
         }
       } else {
         throw response.body;
       }
-    });
+    } catch (error) {
+      throw error;
+    }
   }
 
   void delete(String productId) {

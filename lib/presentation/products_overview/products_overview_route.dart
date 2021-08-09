@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shopit/data/provider/cart_provider.dart';
+import 'package:shopit/data/provider/products_provider.dart';
 import 'package:shopit/presentation/navigation/routes.dart';
 import 'package:shopit/presentation/products_overview/badge_widget.dart';
 import 'package:shopit/presentation/products_overview/products_widget.dart';
@@ -17,6 +18,16 @@ class ProductsOverviewRoute extends StatefulWidget {
 
 class _ProductsOverviewRouteState extends State<ProductsOverviewRoute> {
   bool _isOnlyFavoritesShown = false;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    setState(() => _isLoading = true);
+    context.read<ProductsProvider>().fetchProducts().then((_) {
+      setState(() => _isLoading = false);
+    });
+  }
 
   void _onOptionItemSelected(OptionsMenuItem item) {
     setState(() {
@@ -65,7 +76,9 @@ class _ProductsOverviewRouteState extends State<ProductsOverviewRoute> {
           ),
         ],
       ),
-      body: _buildProductsWidget(context),
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator())
+          : _buildProductsWidget(context),
     );
   }
 

@@ -40,7 +40,7 @@ class _AddEditUserProductRouteState extends State<AddEditUserProductRoute> {
   final String? Function(String?) _blankValidator =
       (value) => (value == null || value.isEmpty) ? 'Can\'t be blank' : null;
 
-  void _submitForm() {
+  Future<void> _submitForm() async {
     final FormState? formState = _formKey.currentState;
 
     if (formState?.validate() == false) {
@@ -53,23 +53,25 @@ class _AddEditUserProductRouteState extends State<AddEditUserProductRoute> {
 
     setState(() => _loading = true);
 
-    (_updateProductId == null
-            ? productsProvider.addProduct(
-                _title!,
-                _description!,
-                _imageUrl!,
-                double.parse(_price!),
-              )
-            : productsProvider.updateProduct(
-                _updateProductId!,
-                _title!,
-                _description!,
-                _imageUrl!,
-                double.parse(_price!),
+    try {
+      await (_updateProductId == null
+          ? productsProvider.addProduct(
+              _title!,
+              _description!,
+              _imageUrl!,
+              double.parse(
+                _price!,
               ))
-        .catchError((error) {
+          : productsProvider.updateProduct(
+              _updateProductId!,
+              _title!,
+              _description!,
+              _imageUrl!,
+              double.parse(_price!),
+            ));
+    } catch (error) {
       setState(() => _loading = false);
-      return showDialog<Null>(
+      await showDialog<Null>(
         context: context,
         builder: (_) => AlertDialog(
           title: Text('Add product issue'),
@@ -82,10 +84,9 @@ class _AddEditUserProductRouteState extends State<AddEditUserProductRoute> {
           ],
         ),
       );
-    }).then((_) {
-      setState(() => _loading = false);
+    } finally {
       Navigator.of(context).pop();
-    });
+    }
   }
 
   @override
