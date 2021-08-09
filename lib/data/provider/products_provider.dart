@@ -17,8 +17,20 @@ class ProductsProvider with ChangeNotifier {
   Product findById(String id) =>
       _products.firstWhere((product) => product.id == id);
 
-  void toggleFavorite(String id) {
-    _products.firstWhere((product) => product.id == id).toggleFavorite();
+  Future<void> toggleFavorite(String id) async {
+    final Product product = _products.firstWhere((product) => product.id == id);
+    product.toggleFavorite();
+
+    final patchData = jsonEncode({'favorite': product.isFavorite});
+    final url = _buildUri(productId: id);
+
+    try {
+      final response = await http.patch(url, body: patchData);
+      if (!_isResponseSuccess(response)) throw HttpExceptions(response);
+    } catch (error) {
+      product.toggleFavorite();
+      throw error;
+    }
   }
 
   void _tryResponseBody({

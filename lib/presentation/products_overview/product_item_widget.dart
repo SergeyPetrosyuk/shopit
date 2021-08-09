@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shopit/data/provider/cart_provider.dart';
+import 'package:shopit/data/provider/products_provider.dart';
 import 'package:shopit/model/product.dart';
 import 'package:shopit/presentation/navigation/routes.dart';
 
@@ -26,9 +27,25 @@ class ProductItem extends StatelessWidget {
     );
   }
 
+  void _toggleFavorite(
+    ProductsProvider provider,
+    ScaffoldMessengerState messengerState,
+    String productId,
+  ) async {
+    try {
+      await provider.toggleFavorite(productId);
+    } catch (error) {
+      messengerState.showSnackBar(SnackBar(
+        content: Text(error.toString()),
+      ));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final product = context.read<Product>();
+    final product = context.watch<Product>();
+    final provider = context.read<ProductsProvider>();
+    final messengerState = ScaffoldMessenger.of(context);
 
     return Card(
         elevation: 0,
@@ -53,7 +70,11 @@ class ProductItem extends StatelessWidget {
                   flex: 1,
                   child: Consumer<Product>(
                     builder: (builderContext, p, child) => IconButton(
-                      onPressed: () => p.toggleFavorite(),
+                      onPressed: () => _toggleFavorite(
+                        provider,
+                        messengerState,
+                        product.id,
+                      ),
                       icon: Icon(p.isFavorite
                           ? Icons.star_rate_rounded
                           : Icons.star_border_rounded),
