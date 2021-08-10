@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shopit/data/network/endpoint.dart';
+import 'package:shopit/data/network/response_utils.dart';
 import 'package:shopit/model/http_exception.dart';
 import 'package:shopit/model/product.dart';
 
@@ -26,19 +27,19 @@ class ProductsProvider with ChangeNotifier {
 
     try {
       final response = await http.patch(url, body: patchData);
-      if (!_isResponseSuccess(response)) throw HttpExceptions(response);
+      if (!isResponseSuccess(response)) throw HttpExceptions(response);
     } catch (error) {
       product.toggleFavorite();
       throw error;
     }
   }
 
-  void _tryResponseBody({
+  void tryResponseBody({
     required http.Response response,
     required Function(Map<String, dynamic>) responseBodyAction,
     Function(Exception exception)? failureAction,
   }) {
-    if (!_isResponseSuccess(response)) {
+    if (!isResponseSuccess(response)) {
       failureAction?.call(Exception(response.body));
       return;
     }
@@ -60,10 +61,16 @@ class ProductsProvider with ChangeNotifier {
     try {
       final response = await http.get(uri);
 
-      _tryResponseBody(
+      tryResponseBody(
         response: response,
         failureAction: (error) => throw error,
         responseBodyAction: (data) {
+          if (data.isEmpty) {
+            _products = [];
+            notifyListeners();
+            return;
+          }
+
           final List<Product> products = [];
           data.forEach((id, productData) {
             products.add(Product(
@@ -109,7 +116,7 @@ class ProductsProvider with ChangeNotifier {
         body: productJsonData,
       );
 
-      if (_isResponseSuccess(response)) {
+      if (isResponseSuccess(response)) {
         final product = Product(
           id: id,
           title: title,
@@ -146,7 +153,7 @@ class ProductsProvider with ChangeNotifier {
     try {
       final response = await http.post(_buildUri(), body: productJsonData);
 
-      if (_isResponseSuccess(response)) {
+      if (isResponseSuccess(response)) {
         if (response.body.isNotEmpty) {
           final Map<String, dynamic> responseData = jsonDecode(response.body);
 
@@ -197,9 +204,6 @@ class ProductsProvider with ChangeNotifier {
     }
     product = null;
   }
-
-  bool _isResponseSuccess(http.Response response) =>
-      response.statusCode >= 200 && response.statusCode < 300;
 
   Uri _buildUri({String productId = ''}) {
     final endpoint = productId.isNotEmpty ? '/$productId' : '';

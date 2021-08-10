@@ -15,6 +15,13 @@ class CartItem with ChangeNotifier {
     this.quantity = 0,
   });
 
+  Map<String, Object> toMap() => {
+        'product_id': productId,
+        'title': title,
+        'price': price,
+        'quantity': quantity,
+      };
+
   void increaseQuantity() {
     quantity += 1;
     notifyListeners();

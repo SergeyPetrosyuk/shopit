@@ -65,7 +65,10 @@ class UserProductsRoute extends StatelessWidget {
           children: [
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: const Text('You do not have products yet'),
+              child: Text(
+                'You don\'t have products yet',
+                style: Theme.of(context).textTheme.headline6,
+              ),
             ),
             ElevatedButton(
               style: ButtonStyle(
