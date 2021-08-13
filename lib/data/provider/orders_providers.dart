@@ -17,16 +17,20 @@ class OrdersProvider with ChangeNotifier {
 
   OrdersProvider(this._authProvider, this._orders);
 
-  Future<Uri> _buildUri(String endpoint) async {
+  Uri _buildUri(String endpoint) {
     final authToken = _authProvider?.restoreSession();
-    return Uri.https(BASE_URL, '$endpoint.json', {'auth': authToken});
+    return Uri.https(
+      BASE_URL,
+      '$endpoint/${_authProvider?.userId}.json',
+      {'auth': authToken},
+    );
   }
 
   Future<void> fetchOrders({bool refresh = false}) async {
     if (_orders.isNotEmpty && !refresh) return;
 
     try {
-      final uri = await _buildUri(Endpoint.Orders);
+      final uri = _buildUri(Endpoint.Orders);
       final response = await http.get(uri);
       tryResponseBody(
         response: response,
@@ -77,7 +81,7 @@ class OrdersProvider with ChangeNotifier {
     });
 
     try {
-      final uri = await _buildUri(Endpoint.Orders);
+      final uri = _buildUri(Endpoint.Orders);
       final response = await http.post(uri, body: orderData);
 
       tryResponseBody(
