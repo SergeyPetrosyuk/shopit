@@ -34,6 +34,7 @@ class AuthProvider with ChangeNotifier {
     if (expireAt != null) {
       _expireAt = DateTime.parse(expireAt);
     }
+    _userId = _prefs.getString('user_id');
     _token = _prefs.getString('auth_token');
     return token;
   }
@@ -93,6 +94,8 @@ class AuthProvider with ChangeNotifier {
           }
           if (data.containsKey('localId')) {
             _userId = data['localId'];
+            final userId = _userId;
+            if(userId != null) await _prefs.setString('user_id', userId);
           }
           if (data.containsKey('expiresIn')) {
             final int seconds = int.parse(data['expiresIn']);
