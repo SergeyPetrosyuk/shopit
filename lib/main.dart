@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
+import 'package:shopit/data/provider/auth_provider.dart';
 import 'package:shopit/data/provider/cart_provider.dart';
 import 'package:shopit/data/provider/orders_providers.dart';
 import 'package:shopit/data/provider/products_provider.dart';
+import 'package:shopit/presentation/auth/auth_route.dart';
 import 'package:shopit/presentation/cart/cart_route.dart';
 import 'package:shopit/presentation/navigation/routes.dart';
 import 'package:shopit/presentation/orders_overview/orders_route.dart';
 import 'package:shopit/presentation/product_detail/product_detail_route.dart';
-import 'package:shopit/presentation/products_overview/products_overview_route.dart';
 import 'package:shopit/presentation/tabs/tabs_route.dart';
 import 'package:shopit/presentation/user_products/add_edit_user_product_route.dart';
 
-void main() {
+Future main() async {
+  await dotenv.load();
   runApp(MyApp());
 }
 
@@ -23,25 +25,47 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => MultiProvider(
         providers: [
-          ChangeNotifierProvider(create: (_) => ProductsProvider()),
-          ChangeNotifierProvider(create: (_) => CartProvider()),
-          ChangeNotifierProvider(create: (_) => OrdersProvider()),
-        ],
-        child: MaterialApp(
-          debugShowCheckedModeBanner: false,
-          title: title,
-          theme: ThemeData(
-            scaffoldBackgroundColor: Color.fromRGBO(230, 230, 230, 1),
-            primarySwatch: Colors.blue,
-            accentColor: Colors.purple,
+          ChangeNotifierProvider(create: (_) => AuthProvider()),
+          ChangeNotifierProxyProvider<AuthProvider, ProductsProvider>(
+            update: (_, authProvider, productsProvider) {
+              return ProductsProvider(
+                authProvider,
+                productsProvider == null ? [] : productsProvider.products,
+              );
+            },
+            create: (_) => ProductsProvider(null, []),
           ),
-          routes: {
-            AppRoute.ROOT: (_) => TabsRoute(title: title),
-            AppRoute.PRODUCTS_DETAIL: (_) => ProductDetailRoute(),
-            AppRoute.CART: (_) => CartRoute(),
-            AppRoute.ORDERS: (_) => OrdersRoute(),
-            AppRoute.ADD_EDIT_USER_PRODUCT: (_) => AddEditUserProductRoute(),
-          },
+          ChangeNotifierProvider(create: (_) => CartProvider()),
+          ChangeNotifierProxyProvider<AuthProvider, OrdersProvider>(
+              update: (_, authProvider, orderProvider) => OrdersProvider(
+                    authProvider,
+                    orderProvider == null ? [] : orderProvider.orders,
+                  ),
+              create: (_) => OrdersProvider(null, [])),
+        ],
+        child: Consumer<AuthProvider>(
+          builder: (builderContext, authProvider, _) =>
+              _buildAppWidget(context, authProvider),
         ),
+      );
+
+  Widget _buildAppWidget(BuildContext context, AuthProvider authProvider) =>
+      MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: title,
+        theme: ThemeData(
+          scaffoldBackgroundColor: Color.fromRGBO(230, 230, 230, 1),
+          primarySwatch: Colors.blue,
+          accentColor: Colors.purple,
+        ),
+        home:
+            authProvider.sessionActive ? TabsRoute(title: title) : AuthRoute(),
+        routes: {
+          AppRoute.PRODUCTS_DETAIL: (_) => ProductDetailRoute(),
+          AppRoute.CART: (_) => CartRoute(),
+          AppRoute.ORDERS: (_) => OrdersRoute(),
+          AppRoute.ADD_EDIT_USER_PRODUCT: (_) => AddEditUserProductRoute(),
+          AppRoute.AUTH: (_) => AuthRoute(),
+        },
       );
 }

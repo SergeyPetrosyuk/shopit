@@ -4,22 +4,30 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shopit/data/network/endpoint.dart';
 import 'package:shopit/data/network/response_utils.dart';
+import 'package:shopit/data/provider/auth_provider.dart';
 import 'package:shopit/model/order.dart';
 
 import 'cart_provider.dart';
 
 class OrdersProvider with ChangeNotifier {
+  final AuthProvider? _authProvider;
   List<Order> _orders = [];
 
   List<Order> get orders => [..._orders];
 
+  OrdersProvider(this._authProvider, this._orders);
+
+  Future<Uri> _buildUri(String endpoint) async {
+    final authToken = await _authProvider?.restoreSession();
+    return Uri.https(BASE_URL, '$endpoint.json', {'auth': authToken});
+  }
+
   Future<void> fetchOrders({bool refresh = false}) async {
     if (_orders.isNotEmpty && !refresh) return;
 
-    final url = Uri.https(BASE_URL, '${Endpoint.Orders}.json');
-
     try {
-      final response = await http.get(url);
+      final uri = await _buildUri(Endpoint.Orders);
+      final response = await http.get(uri);
       tryResponseBody(
         response: response,
         responseBodyAction: (data) {
@@ -61,7 +69,6 @@ class OrdersProvider with ChangeNotifier {
   }
 
   Future<void> addOrder(List<CartItem> items, double amount) async {
-    final url = Uri.https(BASE_URL, '${Endpoint.Orders}.json');
     final date = DateTime.now();
     final orderData = jsonEncode({
       'amount': amount,
@@ -70,7 +77,8 @@ class OrdersProvider with ChangeNotifier {
     });
 
     try {
-      final response = await http.post(url, body: orderData);
+      final uri = await _buildUri(Endpoint.Orders);
+      final response = await http.post(uri, body: orderData);
 
       tryResponseBody(
         response: response,

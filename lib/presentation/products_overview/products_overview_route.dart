@@ -26,7 +26,28 @@ class _ProductsOverviewRouteState extends State<ProductsOverviewRoute> {
     setState(() => _isLoading = true);
     context.read<ProductsProvider>().fetchProducts().then((_) {
       setState(() => _isLoading = false);
+    }).catchError((error) {
+      setState(() => _isLoading = false);
+      showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+                content: Text(error.toString()),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text('Close'),
+                  ),
+                  TextButton(
+                    onPressed: () => _authorize(context),
+                    child: Text('Authorize'),
+                  )
+                ],
+              ));
     });
+  }
+
+  void _authorize(BuildContext context) {
+    Navigator.of(context).popAndPushNamed(AppRoute.AUTH).then((value) {});
   }
 
   void _onOptionItemSelected(OptionsMenuItem item) {

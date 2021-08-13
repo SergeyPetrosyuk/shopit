@@ -7,13 +7,18 @@ import 'package:shopit/data/network/response_utils.dart';
 import 'package:shopit/model/http_exception.dart';
 import 'package:shopit/model/product.dart';
 
+import 'auth_provider.dart';
+
 class ProductsProvider with ChangeNotifier {
+  final AuthProvider? _authProvider;
   List<Product> _products = [];
 
   List<Product> get products => [..._products];
 
   List<Product> get favoriteProducts =>
       _products.where((product) => product.isFavorite).toList();
+
+  ProductsProvider(this._authProvider, this._products);
 
   Product findById(String id) =>
       _products.firstWhere((product) => product.id == id);
@@ -23,7 +28,7 @@ class ProductsProvider with ChangeNotifier {
     product.toggleFavorite();
 
     final patchData = jsonEncode({'favorite': product.isFavorite});
-    final url = _buildUri(productId: id);
+    final url = await _buildUri(productId: id);
 
     try {
       final response = await http.patch(url, body: patchData);
@@ -34,31 +39,11 @@ class ProductsProvider with ChangeNotifier {
     }
   }
 
-  void tryResponseBody({
-    required http.Response response,
-    required Function(Map<String, dynamic>) responseBodyAction,
-    Function(Exception exception)? failureAction,
-  }) {
-    if (!isResponseSuccess(response)) {
-      failureAction?.call(Exception(response.body));
-      return;
-    }
-
-    if (response.body.toLowerCase() == 'null') {
-      responseBodyAction({});
-      return;
-    }
-
-    responseBodyAction(jsonDecode(response.body));
-  }
-
   Future<void> fetchProducts({bool refresh = false}) async {
     if (_products.isNotEmpty && !refresh) return;
 
-    print('fetchProducts()');
-    final uri = Uri.https(BASE_URL, '${Endpoint.Products}.json');
-
     try {
+      final uri = await _buildUri();
       final response = await http.get(uri);
 
       tryResponseBody(
@@ -88,18 +73,15 @@ class ProductsProvider with ChangeNotifier {
         },
       );
     } catch (error) {
-      print('catch::$error');
-      // throw error;
+      throw error;
     }
   }
 
-  Future<void> updateProduct(
-    String id,
-    String title,
-    String description,
-    String imageUrl,
-    double price,
-  ) async {
+  Future<void> updateProduct(String id,
+      String title,
+      String description,
+      String imageUrl,
+      double price,) async {
     final int index = _products.indexWhere((element) => element.id == id);
     final productJsonData = jsonEncode({
       'id': id,
@@ -111,10 +93,8 @@ class ProductsProvider with ChangeNotifier {
     });
 
     try {
-      final response = await http.patch(
-        _buildUri(productId: id),
-        body: productJsonData,
-      );
+      final uri = await _buildUri(productId: id);
+      final response = await http.patch(uri, body: productJsonData);
 
       if (isResponseSuccess(response)) {
         final product = Product(
@@ -136,12 +116,10 @@ class ProductsProvider with ChangeNotifier {
     }
   }
 
-  Future<void> addProduct(
-    String title,
-    String description,
-    String imageUrl,
-    double price,
-  ) async {
+  Future<void> addProduct(String title,
+      String description,
+      String imageUrl,
+      double price,) async {
     final productJsonData = jsonEncode({
       'title': title,
       'description': description,
@@ -151,7 +129,8 @@ class ProductsProvider with ChangeNotifier {
     });
 
     try {
-      final response = await http.post(_buildUri(), body: productJsonData);
+      final uri = await _buildUri();
+      final response = await http.post(uri, body: productJsonData);
 
       if (isResponseSuccess(response)) {
         if (response.body.isNotEmpty) {
@@ -181,7 +160,7 @@ class ProductsProvider with ChangeNotifier {
 
   Future<void> delete(String productId) async {
     final productIndex =
-        _products.indexWhere((element) => element.id == productId);
+    _products.indexWhere((element) => element.id == productId);
 
     if (productIndex == -1) return;
 
@@ -190,7 +169,7 @@ class ProductsProvider with ChangeNotifier {
     _products.removeAt(productIndex);
     notifyListeners();
 
-    final url = _buildUri(productId: productId);
+    final url = await _buildUri(productId: productId);
 
     Function fallbackAction = (){
       _products.insert(productIndex, product!);
@@ -205,9 +184,14 @@ class ProductsProvider with ChangeNotifier {
     product = null;
   }
 
-  Uri _buildUri({String productId = ''}) {
+  Future<Uri> _buildUri({String productId = ''}) async {
     final endpoint = productId.isNotEmpty ? '/$productId' : '';
-    final uri = Uri.https(BASE_URL, '${Endpoint.Products}$endpoint.json');
+    final String? authToken = await _authProvider?.restoreSession();
+    final uri = Uri.https(
+      BASE_URL,
+      '${Endpoint.Products}$endpoint.json',
+      {'auth': authToken},
+    );
     print(uri);
     return uri;
   }

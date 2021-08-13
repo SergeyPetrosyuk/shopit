@@ -6,4 +6,5 @@ class AppRoute {
   static const String ORDERS = '/orders';
   static const String USER_PRODUCTS = '/user-products';
   static const String ADD_EDIT_USER_PRODUCT = '/add-edit-user-product';
+  static const String AUTH = '/auth';
 }

@@ -12,6 +12,7 @@ void tryResponseBody({
   Function(Exception exception)? failureAction,
 }) {
   if (!isResponseSuccess(response)) {
+    print(response.statusCode);
     failureAction?.call(HttpExceptions(response));
     return;
   }
