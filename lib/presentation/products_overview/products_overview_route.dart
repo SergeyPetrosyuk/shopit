@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shopit/data/provider/auth_provider.dart';
 import 'package:shopit/data/provider/cart_provider.dart';
 import 'package:shopit/data/provider/products_provider.dart';
 import 'package:shopit/presentation/navigation/routes.dart';
@@ -9,6 +10,7 @@ import 'package:shopit/presentation/products_overview/products_widget.dart';
 enum OptionsMenuItem {
   Favorites,
   All,
+  Logout,
 }
 
 class ProductsOverviewRoute extends StatefulWidget {
@@ -50,7 +52,12 @@ class _ProductsOverviewRouteState extends State<ProductsOverviewRoute> {
     Navigator.of(context).popAndPushNamed(AppRoute.AUTH).then((value) {});
   }
 
-  void _onOptionItemSelected(OptionsMenuItem item) {
+  Future<void> _onOptionItemSelected(OptionsMenuItem item) async {
+    if (item == OptionsMenuItem.Logout) {
+      await context.read<AuthProvider>().logout();
+      return;
+    }
+
     setState(() {
       _isOnlyFavoritesShown = item == OptionsMenuItem.Favorites;
     });
@@ -88,13 +95,17 @@ class _ProductsOverviewRouteState extends State<ProductsOverviewRoute> {
             onSelected: (OptionsMenuItem item) => _onOptionItemSelected(item),
             icon: Icon(Icons.more_vert_rounded),
             itemBuilder: (_) => [
-              PopupMenuItem(
-                child: Text('Show all products'),
+                PopupMenuItem(
+                  child: Text('Show all products'),
                   value: OptionsMenuItem.All,
                 ),
                 PopupMenuItem(
                   child: Text('Show only favorite products'),
                   value: OptionsMenuItem.Favorites,
+                ),
+                PopupMenuItem(
+                  child: Text('Log Out'),
+                  value: OptionsMenuItem.Logout,
                 ),
               ],
             ),
