@@ -8,6 +8,7 @@ class HttpExceptions implements Exception {
   int get statusCode => response.statusCode;
 
   String get message {
+    print(response.body);
     if (statusCode == 404) {
       return 'Not found';
     }

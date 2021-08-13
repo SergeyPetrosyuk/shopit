@@ -18,6 +18,7 @@ class AuthProvider with ChangeNotifier {
   String? _userId;
 
   bool get sessionActive => token != null;
+  String? get userId => _userId;
 
   String? get token {
     if (_expireAt != null &&
@@ -51,9 +52,6 @@ class AuthProvider with ChangeNotifier {
       'password': password,
       'returnSecureToken': true,
     });
-
-    print(url);
-    print(payload);
 
     try {
       final response = await http.post(url, body: payload);

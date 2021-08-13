@@ -4,6 +4,7 @@ const String AUTH_URL = 'identitytoolkit.googleapis.com';
 class Endpoint {
   static const String Products = 'products';
   static const String Orders = 'orders';
+  static const String Favorites = 'favorites';
   static const String SignUp = 'v1/accounts:signUp';
   static const String SignIn = 'v1/accounts:signInWithPassword';
 }

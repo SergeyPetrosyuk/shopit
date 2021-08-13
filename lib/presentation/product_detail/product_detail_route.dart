@@ -16,6 +16,7 @@ class ProductDetailRoute extends StatelessWidget {
         title: Text(product.title),
       ),
       body: SingleChildScrollView(
+        padding: const EdgeInsets.only(bottom: 16),
         child: Column(
           children: [
             Container(

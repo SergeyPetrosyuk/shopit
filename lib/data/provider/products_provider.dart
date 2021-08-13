@@ -27,11 +27,17 @@ class ProductsProvider with ChangeNotifier {
     final Product product = _products.firstWhere((product) => product.id == id);
     product.toggleFavorite();
 
-    final patchData = jsonEncode({'favorite': product.isFavorite});
-    final url = await _buildUri(productId: id);
+    final patchData = jsonEncode(product.isFavorite);
+    final userId = _authProvider?.userId;
+
+    final url = Uri.https(
+      BASE_URL,
+      '${Endpoint.Favorites}/$userId/$id.json',
+      {'auth': _authProvider?.token},
+    );
 
     try {
-      final response = await http.patch(url, body: patchData);
+      final response = await http.put(url, body: patchData);
       if (!isResponseSuccess(response)) throw HttpExceptions(response);
     } catch (error) {
       product.toggleFavorite();
@@ -39,22 +45,44 @@ class ProductsProvider with ChangeNotifier {
     }
   }
 
-  Future<void> fetchProducts({bool refresh = false}) async {
+  Future<void> fetchProducts({
+    bool refresh = false,
+    bool onlyOwn = false,
+  }) async {
     if (_products.isNotEmpty && !refresh) return;
+    else _products.clear();
 
     try {
-      final uri = await _buildUri();
+      final Map<String, String> queryParams = onlyOwn
+          ? {
+              'orderBy': '"owner_id"',
+              'equalTo': '"${_authProvider?.userId}"',
+            }
+          : {};
+
+      final uri = _buildUri(queryParams: queryParams);
       final response = await http.get(uri);
 
       tryResponseBody(
         response: response,
         failureAction: (error) => throw error,
-        responseBodyAction: (data) {
+        responseBodyAction: (data) async {
           if (data.isEmpty) {
             _products = [];
             notifyListeners();
             return;
           }
+
+          final favoritesResponse = await http.get(Uri.https(
+            BASE_URL,
+            '${Endpoint.Favorites}/${_authProvider?.userId}.json',
+            {'auth': _authProvider?.token},
+          ));
+
+          final Map<String, dynamic> favoritesData =
+              favoritesResponse.body != 'null'
+                  ? jsonDecode(favoritesResponse.body)
+                  : {};
 
           final List<Product> products = [];
           data.forEach((id, productData) {
@@ -64,7 +92,7 @@ class ProductsProvider with ChangeNotifier {
               description: productData['description'],
               price: productData['price'],
               imageUrl: productData['image_url'],
-              isFavorite: productData['favorite'],
+              isFavorite: favoritesData[id] ?? false,
             ));
           });
 
@@ -89,11 +117,10 @@ class ProductsProvider with ChangeNotifier {
       'description': description,
       'image_url': imageUrl,
       'price': price,
-      'favorite': _products[index].isFavorite,
     });
 
     try {
-      final uri = await _buildUri(productId: id);
+      final uri = _buildUri(productId: id);
       final response = await http.patch(uri, body: productJsonData);
 
       if (isResponseSuccess(response)) {
@@ -126,10 +153,11 @@ class ProductsProvider with ChangeNotifier {
       'image_url': imageUrl,
       'price': price,
       'favorite': false,
+      'owner_id': _authProvider?.userId,
     });
 
     try {
-      final uri = await _buildUri();
+      final uri = _buildUri();
       final response = await http.post(uri, body: productJsonData);
 
       if (isResponseSuccess(response)) {
@@ -160,7 +188,7 @@ class ProductsProvider with ChangeNotifier {
 
   Future<void> delete(String productId) async {
     final productIndex =
-    _products.indexWhere((element) => element.id == productId);
+        _products.indexWhere((element) => element.id == productId);
 
     if (productIndex == -1) return;
 
@@ -169,30 +197,34 @@ class ProductsProvider with ChangeNotifier {
     _products.removeAt(productIndex);
     notifyListeners();
 
-    final url = await _buildUri(productId: productId);
+    final url = _buildUri(productId: productId);
 
-    Function fallbackAction = (){
+    Function fallbackAction = () {
       _products.insert(productIndex, product!);
       notifyListeners();
     };
 
     final response = await http.delete(url);
-    if(response.statusCode >= 400) {
+    if (response.statusCode >= 400) {
       fallbackAction();
       throw HttpExceptions(response);
     }
     product = null;
   }
 
-  Future<Uri> _buildUri({String productId = ''}) async {
+  Uri _buildUri({
+    String productId = '',
+    Map<String, String> queryParams = const {},
+  }) {
     final endpoint = productId.isNotEmpty ? '/$productId' : '';
     final String? authToken = _authProvider?.restoreSession();
+    final baseQueryParams = {'auth': authToken};
+    baseQueryParams.addAll(queryParams);
     final uri = Uri.https(
       BASE_URL,
       '${Endpoint.Products}$endpoint.json',
-      {'auth': authToken},
+      baseQueryParams,
     );
-    print(uri);
     return uri;
   }
 }

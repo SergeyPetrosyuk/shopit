@@ -24,7 +24,7 @@ class _ProductsOverviewRouteState extends State<ProductsOverviewRoute> {
   void initState() {
     super.initState();
     setState(() => _isLoading = true);
-    context.read<ProductsProvider>().fetchProducts().then((_) {
+    context.read<ProductsProvider>().fetchProducts(refresh: true).then((_) {
       setState(() => _isLoading = false);
     }).catchError((error) {
       setState(() => _isLoading = false);
@@ -60,20 +60,23 @@ class _ProductsOverviewRouteState extends State<ProductsOverviewRoute> {
     Navigator.of(context).pushNamed(AppRoute.CART);
   }
 
+  Future<void> _refreshProducts(BuildContext context) async {
+    await context.read<ProductsProvider>().fetchProducts(refresh: true);
+  }
+
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('ShopIt'),
-        actions: [
-          Consumer<CartProvider>(
-            builder: (builderContext, cartProvider, child) => BadgeWidget(
-              value: cartProvider.itemCount > 0
-                  ? cartProvider.itemCount.toString()
-                  : '',
-              child: child!,
-            ),
-            child: IconButton(
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(
+          title: Text('ShopIt'),
+          actions: [
+            Consumer<CartProvider>(
+              builder: (builderContext, cartProvider, child) => BadgeWidget(
+                value: cartProvider.itemCount > 0
+                    ? cartProvider.itemCount.toString()
+                    : '',
+                child: child!,
+              ),
+              child: IconButton(
               icon: Icon(Icons.shopping_bag_rounded),
               onPressed: () => _openCart(context),
             ),
@@ -87,21 +90,23 @@ class _ProductsOverviewRouteState extends State<ProductsOverviewRoute> {
             itemBuilder: (_) => [
               PopupMenuItem(
                 child: Text('Show all products'),
-                value: OptionsMenuItem.All,
-              ),
-              PopupMenuItem(
-                child: Text('Show only favorite products'),
-                value: OptionsMenuItem.Favorites,
-              ),
-            ],
-          ),
-        ],
-      ),
-      body: _isLoading
-          ? Center(child: CircularProgressIndicator())
-          : _buildProductsWidget(context),
-    );
-  }
+                  value: OptionsMenuItem.All,
+                ),
+                PopupMenuItem(
+                  child: Text('Show only favorite products'),
+                  value: OptionsMenuItem.Favorites,
+                ),
+              ],
+            ),
+          ],
+        ),
+        body: RefreshIndicator(
+          onRefresh: () => _refreshProducts(context),
+          child: _isLoading
+              ? Center(child: CircularProgressIndicator())
+              : _buildProductsWidget(context),
+        ),
+      );
 
   Widget _buildProductsWidget(BuildContext context) => ProductsWidget(
         onlyFavorites: _isOnlyFavoritesShown,

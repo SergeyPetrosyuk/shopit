@@ -11,33 +11,42 @@ class UserProductsRoute extends StatelessWidget {
   }
 
   Future<void> _refreshProducts(BuildContext context) async {
-    await context.read<ProductsProvider>().fetchProducts(refresh: true);
+    await context.read<ProductsProvider>().fetchProducts(
+          refresh: true,
+          onlyOwn: true,
+        );
   }
 
   @override
-  Widget build(BuildContext context) {
-    final productsProvider = context.watch<ProductsProvider>();
-    final List<Product> products = productsProvider.products;
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Your products'),
-        actions: [
-          products.isNotEmpty
-              ? IconButton(
-            onPressed: () => _navigateToProductEditing(context),
-            icon: Icon(Icons.add_rounded),
-          )
-              : Container(),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: () => _refreshProducts(context),
-        child: products.isEmpty
-            ? _buildEmptyListWidget(context)
-            : _buildProductListWidget(context, products),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(
+          title: const Text('Your products'),
+          actions: [
+            IconButton(
+              onPressed: () => _navigateToProductEditing(context),
+              icon: Icon(Icons.add_rounded),
+            ),
+          ],
+        ),
+        body: FutureBuilder(
+            future: _refreshProducts(context),
+            builder: (builderContext, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting)
+                return Center(child: CircularProgressIndicator());
+
+              if (snapshot.hasError)
+                return Center(child: Text(snapshot.error.toString()));
+
+              return Consumer<ProductsProvider>(
+                  builder: (consumerContext, provider, _) => RefreshIndicator(
+                        onRefresh: () => _refreshProducts(context),
+                        child: provider.products.isEmpty
+                            ? _buildEmptyListWidget(context)
+                            : _buildProductListWidget(
+                                context, provider.products),
+                      ));
+            }),
+      );
 
   Widget _buildProductListWidget(
     BuildContext context,
