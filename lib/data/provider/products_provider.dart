@@ -186,7 +186,7 @@ class ProductsProvider with ChangeNotifier {
 
   Future<Uri> _buildUri({String productId = ''}) async {
     final endpoint = productId.isNotEmpty ? '/$productId' : '';
-    final String? authToken = await _authProvider?.restoreSession();
+    final String? authToken = _authProvider?.restoreSession();
     final uri = Uri.https(
       BASE_URL,
       '${Endpoint.Products}$endpoint.json',

@@ -18,7 +18,7 @@ class OrdersProvider with ChangeNotifier {
   OrdersProvider(this._authProvider, this._orders);
 
   Future<Uri> _buildUri(String endpoint) async {
-    final authToken = await _authProvider?.restoreSession();
+    final authToken = _authProvider?.restoreSession();
     return Uri.https(BASE_URL, '$endpoint.json', {'auth': authToken});
   }
 

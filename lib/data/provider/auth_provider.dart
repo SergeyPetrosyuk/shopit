@@ -9,6 +9,10 @@ import 'package:shopit/data/network/response_utils.dart';
 import 'package:shopit/model/http_exception.dart';
 
 class AuthProvider with ChangeNotifier {
+  final SharedPreferences _prefs;
+
+  AuthProvider(this._prefs);
+
   String? _token;
   DateTime? _expireAt;
   String? _userId;
@@ -25,9 +29,12 @@ class AuthProvider with ChangeNotifier {
     return null;
   }
 
-  Future<String?> restoreSession() async {
-    final prefs = await SharedPreferences.getInstance();
-    _token = prefs.getString('auth_token');
+  String? restoreSession() {
+    final expireAt = _prefs.getString('expire_at');
+    if (expireAt != null) {
+      _expireAt = DateTime.parse(expireAt);
+    }
+    _token = _prefs.getString('auth_token');
     return token;
   }
 
@@ -81,11 +88,8 @@ class AuthProvider with ChangeNotifier {
         responseBodyAction: (data) async {
           if (data.containsKey('idToken')) {
             _token = data['idToken'];
-            final prefs = await SharedPreferences.getInstance();
             final token = _token;
-            if (token != null) await prefs.setString('auth_token', token);
-            final tokenFromPrefs = prefs.getString('auth_token');
-            print(tokenFromPrefs);
+            if (token != null) await _prefs.setString('auth_token', token);
           }
           if (data.containsKey('localId')) {
             _userId = data['localId'];
@@ -93,6 +97,8 @@ class AuthProvider with ChangeNotifier {
           if (data.containsKey('expiresIn')) {
             final int seconds = int.parse(data['expiresIn']);
             _expireAt = DateTime.now().add(Duration(seconds: seconds));
+            final expireAt = _expireAt?.toIso8601String();
+            if (expireAt != null) await _prefs.setString('expire_at', expireAt);
           }
 
           notifyListeners();
