@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -16,8 +17,10 @@ class AuthProvider with ChangeNotifier {
   String? _token;
   DateTime? _expireAt;
   String? _userId;
+  Timer? _authTimer;
 
   bool get sessionActive => token != null;
+
   String? get userId => _userId;
 
   String? get token {
@@ -93,7 +96,7 @@ class AuthProvider with ChangeNotifier {
           if (data.containsKey('localId')) {
             _userId = data['localId'];
             final userId = _userId;
-            if(userId != null) await _prefs.setString('user_id', userId);
+            if (userId != null) await _prefs.setString('user_id', userId);
           }
           if (data.containsKey('expiresIn')) {
             final int seconds = int.parse(data['expiresIn']);
@@ -102,6 +105,7 @@ class AuthProvider with ChangeNotifier {
             if (expireAt != null) await _prefs.setString('expire_at', expireAt);
           }
 
+          _autoLogout();
           notifyListeners();
         },
       );
@@ -123,6 +127,15 @@ class AuthProvider with ChangeNotifier {
     _token = null;
     _userId = null;
     _expireAt = null;
+    _authTimer?.cancel();
+    _authTimer = null;
     notifyListeners();
+  }
+
+  void _autoLogout() {
+    _authTimer?.cancel();
+
+    final int expireIn = _expireAt?.difference(DateTime.now()).inSeconds ?? 0;
+    _authTimer = Timer(Duration(seconds: expireIn), logout);
   }
 }
