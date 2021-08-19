@@ -110,11 +110,15 @@ class ProductItem extends StatelessWidget {
           ),
           child: Stack(
             children: [
-              Image.network(
-                imageUrl,
-                height: 250,
-                width: double.infinity,
-                fit: BoxFit.cover,
+              Hero(
+                tag: productId,
+                child: FadeInImage.assetNetwork(
+                  height: 250,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  placeholder: 'assets/images/product-placeholder.png',
+                  image: imageUrl,
+                ),
               ),
               Positioned.fill(
                 child: Material(
