@@ -12,33 +12,41 @@ class ProductDetailRoute extends StatelessWidget {
         NumberFormat.simpleCurrency(decimalDigits: 2).format(product.price);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(product.title),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: Column(
-          children: [
-            Container(
-              height: 300,
-              width: double.infinity,
-              child: Hero(
-                tag: product.id,
-                child: Image.network(
-                  product.imageUrl,
-                  fit: BoxFit.cover,
+      // appBar: AppBar(
+      //   title: Text(product.title),
+      // ),
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 300,
+            pinned: true,
+            flexibleSpace: FlexibleSpaceBar(
+                title: Text(product.title),
+                background: Hero(
+                  tag: product.id,
+                  child: Image.network(
+                    product.imageUrl,
+                    fit: BoxFit.cover,
+                  ),
+                )),
+          ),
+          SliverList(
+            delegate: SliverChildListDelegate([
+              SizedBox(height: 16),
+              Center(
+                child: Text(
+                  price,
+                  style: Theme.of(context).textTheme.headline6,
                 ),
               ),
-            ),
-            SizedBox(height: 16),
-            Text(price, style: Theme.of(context).textTheme.headline6),
-            SizedBox(height: 10),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(product.description, softWrap: true),
-            )
-          ],
-        ),
+              SizedBox(height: 10),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(product.description, softWrap: true),
+              )
+            ]),
+          )
+        ],
       ),
     );
   }
