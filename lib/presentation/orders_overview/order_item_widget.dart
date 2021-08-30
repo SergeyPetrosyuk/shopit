@@ -44,27 +44,27 @@ class _OrderItemWidgetState extends State<OrderItemWidget> {
               },
             ),
           ),
-          if (_expanded)
-            Container(
-              height: widget.order.items.length * 30 + 16,
-              child: ListView.builder(
-                padding: EdgeInsets.symmetric(vertical: 8),
-                itemBuilder: (_, index) {
-                  final item = widget.order.items[index];
-                  final amount = NumberFormat.simpleCurrency(decimalDigits: 2)
-                      .format(item.price);
-                  return Container(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    height: 30,
-                    width: double.infinity,
-                    child: Row(
+          AnimatedContainer(
+            duration: Duration(milliseconds: 350),
+            height: _expanded ? widget.order.items.length * 30 + 16 : 0,
+            child: ListView.builder(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              itemBuilder: (_, index) {
+                final item = widget.order.items[index];
+                final amount = NumberFormat.simpleCurrency(decimalDigits: 2)
+                    .format(item.price);
+                return Container(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  height: 30,
+                  width: double.infinity,
+                  child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(item.title),
                         Text(
-                          '${item.quantity} X $amount',
-                          style: TextStyle(color: Colors.blueGrey),
-                        ),
+                          '${item.quantity} x $amount',
+                        style: TextStyle(color: Colors.blueGrey),
+                      ),
                       ],
                     ),
                   );
