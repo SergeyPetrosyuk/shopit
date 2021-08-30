@@ -3,9 +3,11 @@ import 'package:provider/provider.dart';
 import 'package:shopit/data/provider/auth_provider.dart';
 import 'package:shopit/data/provider/cart_provider.dart';
 import 'package:shopit/data/provider/products_provider.dart';
+import 'package:shopit/presentation/cart/cart_route.dart';
 import 'package:shopit/presentation/navigation/routes.dart';
 import 'package:shopit/presentation/products_overview/badge_widget.dart';
 import 'package:shopit/presentation/products_overview/products_widget.dart';
+import 'package:shopit/util/custom_route.dart';
 
 enum OptionsMenuItem {
   Favorites,
@@ -64,6 +66,9 @@ class _ProductsOverviewRouteState extends State<ProductsOverviewRoute> {
   }
 
   void _openCart(BuildContext context) {
+    // Navigator.of(context).push(
+    //   CustomRoute(builder: (builderContext) => CartRoute()),
+    // );
     Navigator.of(context).pushNamed(AppRoute.CART);
   }
 

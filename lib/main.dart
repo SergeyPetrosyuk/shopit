@@ -13,6 +13,7 @@ import 'package:shopit/presentation/orders_overview/orders_route.dart';
 import 'package:shopit/presentation/product_detail/product_detail_route.dart';
 import 'package:shopit/presentation/tabs/tabs_route.dart';
 import 'package:shopit/presentation/user_products/add_edit_user_product_route.dart';
+import 'package:shopit/util/custom_route.dart';
 
 Future main() async {
   await dotenv.load();
@@ -63,6 +64,9 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: Color.fromRGBO(230, 230, 230, 1),
         primarySwatch: Colors.blue,
         accentColor: Colors.purple,
+        pageTransitionsTheme: PageTransitionsTheme(builders: {
+          TargetPlatform.android: CustomRouteTransitionBuilder(),
+        }),
       ),
       home: authProvider.sessionActive ? TabsRoute(title: title) : AuthRoute(),
       routes: {
